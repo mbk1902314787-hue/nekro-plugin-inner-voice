@@ -118,6 +118,14 @@ uvx --with pytest-asyncio pytest -q
 
 覆盖内容：marker 提取、坏 marker 剥离、概率与冷却判定、主回复后发送顺序。
 
+##颜色设置
+
+深粉红：R=180, G=50, B=90
+深紫红：R=140, G=30, B=80
+黑色：R=0, G=0, B=0
+深灰：R=50, G=50, B=50
+深红：R=180, G=0, B=0
+
 ## License
 
 本仓库原创插件代码使用 MIT License。
