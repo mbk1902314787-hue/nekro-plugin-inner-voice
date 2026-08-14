@@ -1,0 +1,60 @@
+diff --git a/nekro_agent/services/agent/run_agent.py b/nekro_agent/services/agent/run_agent.py
+index 5934853..0dcedb5 100644
+--- a/nekro_agent/services/agent/run_agent.py
++++ b/nekro_agent/services/agent/run_agent.py
+@@ -200,6 +200,12 @@ async def run_agent(
+         )
+         raise
+     logger.debug(f"[run_agent] {chat_key} | LLM 请求完成，开始解析响应")
++    try:
++        from plugins.builtin.inner_voice import capture_from_llm_response
++
++        llm_response.response_content = capture_from_llm_response(chat_key, llm_response.response_content)
++    except Exception as e:  # noqa: BLE001
++        logger.warning(f"[run_agent] {chat_key} | 心声 marker 处理失败，已继续主流程: {e}")
+     parsed_code_data: ParsedCodeRunData = parse_chat_response(llm_response.response_content)
+ 
+     for i in range(config.AI_SCRIPT_MAX_RETRY_TIMES):
+@@ -231,6 +237,12 @@ async def run_agent(
+                 iteration_index=current_iteration,
+                 model_name=llm_response.use_model,
+             )
++            try:
++                from plugins.builtin.inner_voice import send_pending_after_agent_reply
++
++                await send_pending_after_agent_reply(ctx)
++            except Exception as e:  # noqa: BLE001
++                logger.warning(f"[run_agent] {chat_key} | Agent 完成后发送心声失败，已忽略: {e}")
+             return
+ 
+         await publish_runtime_state(
+@@ -373,6 +385,12 @@ async def run_agent(
+                 error_summary=_summarize_runtime_text(str(e)),
+             )
+             raise
++        try:
++            from plugins.builtin.inner_voice import capture_from_llm_response
++
++            llm_response.response_content = capture_from_llm_response(chat_key, llm_response.response_content)
++        except Exception as e:  # noqa: BLE001
++            logger.warning(f"[run_agent] {chat_key} | 迭代心声 marker 处理失败，已继续主流程: {e}")
+         parsed_code_data = parse_chat_response(llm_response.response_content)
+ 
+ 
+diff --git a/nekro_agent/services/chat/universal_chat_service.py b/nekro_agent/services/chat/universal_chat_service.py
+index de46f50..97d96ac 100644
+--- a/nekro_agent/services/chat/universal_chat_service.py
++++ b/nekro_agent/services/chat/universal_chat_service.py
+@@ -180,6 +180,12 @@ class UniversalChatService:
+             if agent_message_type == AgentMessageSegmentType.TEXT:
+                 # 处理文本消息 - 只做基本的修复，不解析@
+                 content = fix_raw_response(content)
++                try:
++                    from plugins.builtin.inner_voice import strip_inner_voice_marker
++
++                    content, _ = strip_inner_voice_marker(content)
++                except Exception as exc:  # noqa: BLE001
++                    logger.debug(f"心声 marker 发送前兜底剥离失败，继续发送清洗后文本: {exc}")
+                 agent_message.content = content
+ 
+                 if content.strip():
